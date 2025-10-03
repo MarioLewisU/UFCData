@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+import re
 
 __all__ = ['mutate_data']
 
@@ -8,13 +9,14 @@ def mutate_data():
     if not os.path.exists('out'):
         os.mkdir('out')
 
-    mutate_fighter_data()
-    mutate_event_details()
-    mutate_fight_data()
-    mutate_fight_stats()
-    lowercase_headers()
+    __mutate_fighter_data()
+    __mutate_event_details()
+    __mutate_fight_data()
+    __mutate_fight_stats()
+    __cleanup_all()
 
-def mutate_fighter_data():
+
+def __mutate_fighter_data():
     """
     Combine UFC fighter data keeping all records from both files.
     """
@@ -28,12 +30,12 @@ def mutate_fighter_data():
     if 'FIGHTER' in combined_df.columns:
         combined_df = combined_df.drop('FIGHTER', axis=1)
 
-    combined_df = combined_df.replace('--', '')    
+    combined_df = combined_df.replace('--', '')
 
     combined_df.to_csv('out/fighters.csv', index=False)
 
 
-def mutate_event_details():
+def __mutate_event_details():
     df_events = pd.read_csv('ufc_event_details.csv')
 
     df_events.rename(columns={'EVENT': 'NAME'}, inplace=True)
@@ -41,7 +43,7 @@ def mutate_event_details():
     df_events.to_csv('out/events.csv', index=False)
 
 
-def mutate_fight_data():
+def __mutate_fight_data():
     df_fight_details = pd.read_csv('ufc_fight_details.csv')
     df_fight_results = pd.read_csv('ufc_fight_results.csv')
 
@@ -57,7 +59,7 @@ def mutate_fight_data():
     combined_df.to_csv('out/fights.csv', index=False)
 
 
-def mutate_fight_stats():
+def __mutate_fight_stats():
     df_fight_stats = pd.read_csv('ufc_fight_stats.csv')
 
     rename_cols = {
@@ -120,16 +122,24 @@ def mutate_fight_stats():
     df_fight_stats[['GROUNDHIT', 'GROUNDATTEMPTED']
                    ] = df_fight_stats['GROUND'].str.extract(r'(\d+) of (\d+)')
     df_fight_stats.drop('GROUND', axis=1, inplace=True)
-    
+
     df_fight_stats.to_csv('out/fight_stats.csv', index=False)
 
-def lowercase_headers():
 
-    files = ['out/fighters.csv', 'out/events.csv', 'out/fights.csv', 'out/fight_stats.csv']
-    
+def __cleanup_all():
+
+    files = ['out/fighters.csv', 'out/events.csv',
+             'out/fights.csv', 'out/fight_stats.csv']
+
     for file in files:
         if os.path.exists(file):
             df = pd.read_csv(file)
-            df.columns = [col.lower() for col in df.columns]  # Lowercase headers
+
+            # Lowercase headers
+            df.columns = [col.lower() for col in df.columns]
+            # Strip whitespace from strings
+            df = df.map(lambda x: x.strip() if isinstance(x, str) else x)
+            # Remove double-spaces
+            df = df.map(lambda x: re.sub(r'\s+', ' ', x.strip())
+                        if isinstance(x, str) else x)
             df.to_csv(file, index=False)
-            print(f"Lowercased headers for: {file}")

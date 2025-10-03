@@ -1,6 +1,6 @@
 import requests
 from mutate import mutate_data
-from database_loader import load_data_to_postgres
+from database.database_loader import load_database
 
 
 files = [
@@ -19,4 +19,4 @@ for fname in files:
         f.write(response.content)
 
 mutate_data()
-load_data_to_postgres()
+load_database()
