@@ -4,29 +4,35 @@ from sqlalchemy import create_engine, text, select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import ProgrammingError, OperationalError
 from database.models  import *
+import os
+from dotenv import load_dotenv
+
+load_dotenv()  
+DB_CONFIG = {
+    'host': os.getenv('DB_HOST'),
+    'port': os.getenv('DB_PORT'), 
+    'database': os.getenv('DB_NAME'),
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD')  
+}
+
+missing_vars = [key for key, value in DB_CONFIG.items() if value is None]
+if missing_vars:
+    raise ValueError(f"Missing required environment variables: {missing_vars}")
+
 
 __all__ = ['load_database']
 
 try:
-    # Try to connect to 'ufc_data'
-    engine = create_engine(
-        'postgresql://postgres:0000@localhost:5432/UFCData')
+    connection_string = f"postgresql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}"
+    engine = create_engine(connection_string)
+    
     with engine.connect() as conn:
         conn.execute(text("SELECT 1"))
-        print("Connected to database 'UFCData'")
-except (ProgrammingError, OperationalError):
-    print("Could not connect to database 'UFCData', creating...")
-
-    temp_engine = create_engine(
-        'postgresql://postgres:0000@localhost:5432/UFCData')
-    with temp_engine.connect() as conn:
-        conn.execute(text("COMMIT"))
-        conn.execute(text("CREATE DATABASE UFCData"))
-
-    engine = create_engine(
-        'postgresql://postgres:0000@localhost:5432/UFCData')
-
-    print("Created and connected to database 'UFCData'")
+        print(f"Connected to database '{DB_CONFIG['database']}'")
+        
+except (ProgrammingError, OperationalError) as e:
+    print(f"Database connection failed: {e}")
 
 
 def load_database():

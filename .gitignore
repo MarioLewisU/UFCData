@@ -1,4 +1,8 @@
-venv/ 
+venv/
 __pycache__/
 *.csv
 .DS_STORE
+.env
+*.log
+.vscode/
+.idea/
